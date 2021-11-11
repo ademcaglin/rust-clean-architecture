@@ -1,14 +1,18 @@
-use poem::{get, handler, listener::TcpListener, web::Path, IntoResponse, Route, Server};
+use actix_web::{web, App, HttpRequest, HttpServer, Responder};
 
-#[handler]
-fn hello(Path(name): Path<String>) -> String {
-    format!("hello: {}", name)
+async fn greet(req: HttpRequest) -> impl Responder {
+    let name = req.match_info().get("name").unwrap_or("World");
+    format!("Hello {}!", &name)
 }
 
-#[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
-    let app = Route::new().at("/hello/:name", get(hello));
-    let listener = TcpListener::bind("127.0.0.1:3000");
-    let server = Server::new(listener).await?;
-    server.run(app).await
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    HttpServer::new(|| {
+        App::new()
+            .route("/", web::get().to(greet))
+            .route("/{name}", web::get().to(greet))
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
 }
