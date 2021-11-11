@@ -17,6 +17,7 @@ pub struct User {
 
 #[cfg_attr(test, automock)]
 pub trait UserRepository {
+    fn get_all(&self) -> Vec<User>; 
     fn get_by_id(&self, id: u32) -> Option<User>;
     fn is_user_exist(&self, username: String) -> bool;
     fn register(&self, username: String, email: String);
@@ -40,5 +41,12 @@ impl UserRepository for PostgesUserRepository {
     }
     fn is_user_exist(&self, username: String) -> bool {
         DB.lock().unwrap().iter().any(|x| x.username == username)
+    }
+
+    fn get_all(&self) -> Vec<User> {
+        let mut all = DB.lock().unwrap();
+        let mut list: Vec<User> = vec![];
+        list.extend(all.drain(..));
+        list
     }
 }

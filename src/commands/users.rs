@@ -1,15 +1,17 @@
-use crate::handlers::Command;
+use crate::infra::cqrs::Command;
 use crate::models::users::*;
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Debug, Validate)]
+#[derive(Debug, Validate, Serialize, Deserialize)]
 pub struct UserRegisterCommand {
     pub username: String,
     #[validate(email)]
     pub email: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UserRegisterCommandResult {
     pub ok: bool,
 }
@@ -32,6 +34,7 @@ impl UserRegisterCommand {
         Ok(UserRegisterCommandResult { ok: true })
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -75,38 +78,3 @@ mod tests {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-let user = User {
-    id: 123,
-    username: "adem2".to_string(),
-    email: "adem".to_string(),
-};
-mock.expect_get_by_id()
-    .with(eq(123))
-    .return_const(Some(user));
-pub struct MockUserRepository {}
-
-impl UserRepository for MockUserRepository {
-    fn get_by_id(&self, id: &str) -> Option<User> {
-        Some(User {
-            id: Some(id.to_string()),
-            username: "adem".to_string(),
-            email: "adem".to_string(),
-        })
-    }
-    fn register(&self, _: User) { todo!() }
-}*/
