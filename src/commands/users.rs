@@ -11,7 +11,7 @@ pub struct UserRegisterCommand {
 }
 
 pub struct UserRegisterCommandResult {
-    pub id: u32,
+    pub ok: bool,
 }
 
 impl Command<UserRegisterCommandResult> for UserRegisterCommand {
@@ -24,12 +24,12 @@ impl Command<UserRegisterCommandResult> for UserRegisterCommand {
 
 impl UserRegisterCommand {
     fn handle_inner(&self, user_repo: &impl UserRepository) -> Result<UserRegisterCommandResult> {
-        let user = user_repo.get_by_username(self.username.clone());
-        if user != None  {
+        let exist = user_repo.is_user_exist(self.username.clone());
+        if exist {
             bail!("User exists");
         }
-        let user = user_repo.register(self.username.clone(),self.email.clone());
-        Ok(UserRegisterCommandResult { id: user.unwrap().id })
+        user_repo.register(self.username.clone(), self.email.clone());
+        Ok(UserRegisterCommandResult { ok: true })
     }
 }
 
@@ -38,26 +38,67 @@ mod tests {
     use super::*;
     use mockall::predicate::eq;
     #[test]
-    fn test() {
+    fn user_exists_test() {
         let mut mock = MockUserRepository::new();
-        let user = User {
-            id: 123,
-            username: "adem".to_string(),
-            email: "adem".to_string(),
-        };
-        mock.expect_get_by_id()
-            .with(eq(123))
-            .return_const(Some(user));
+
+        mock.expect_is_user_exist()
+            .with(eq("adem".to_string()))
+            .return_const(true);
+        mock.expect_register()
+            .with(eq("adem".to_string()), eq("adem@gmail.com".to_string()))
+            .return_const(());
         let cmd = UserRegisterCommand {
             username: "adem".to_string(),
             email: "adem@gmail.com".to_string(),
         };
-        let a: UserRegisterCommandResult = cmd.handle_inner(&mock).unwrap();
-        assert_eq!(a.id, 123);
+        let a = cmd.handle_inner(&mock);
+        assert_eq!(a.is_err(), true);
+    }
+
+    #[test]
+    fn ok_test() {
+        let mut mock = MockUserRepository::new();
+
+        mock.expect_is_user_exist()
+            .with(eq("adem".to_string()))
+            .return_const(false);
+        mock.expect_register()
+            .with(eq("adem".to_string()), eq("adem@gmail.com".to_string()))
+            .return_const(());
+        let cmd = UserRegisterCommand {
+            username: "adem".to_string(),
+            email: "adem@gmail.com".to_string(),
+        };
+        let a = cmd.handle_inner(&mock);
+        assert_eq!(a.is_err(), false);
+        assert_eq!(a.unwrap().ok, true);
     }
 }
 
-/*pub struct MockUserRepository {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+let user = User {
+    id: 123,
+    username: "adem2".to_string(),
+    email: "adem".to_string(),
+};
+mock.expect_get_by_id()
+    .with(eq(123))
+    .return_const(Some(user));
+pub struct MockUserRepository {}
 
 impl UserRepository for MockUserRepository {
     fn get_by_id(&self, id: &str) -> Option<User> {

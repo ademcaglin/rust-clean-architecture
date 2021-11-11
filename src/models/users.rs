@@ -18,7 +18,7 @@ pub struct User {
 #[cfg_attr(test, automock)]
 pub trait UserRepository {
     fn get_by_id(&self, id: u32) -> Option<User>;
-    fn get_by_username(&self, username: String) -> Option<User>;
+    fn is_user_exist(&self, username: String) -> bool;
     fn register(&self, username: String, email: String);
 }
 
@@ -38,8 +38,7 @@ impl UserRepository for PostgesUserRepository {
             email: email,
         });
     }
-    fn get_by_username(&self, username: String) -> Option<User> {
-        let user = DB.lock().unwrap().iter().find(|x| x.username == username)?.clone();
-        Some(user)
+    fn is_user_exist(&self, username: String) -> bool {
+        DB.lock().unwrap().iter().any(|x| x.username == username)
     }
 }
