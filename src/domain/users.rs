@@ -1,8 +1,28 @@
-use crate::infra::cqrs::Command;
-use crate::models::users::*;
+use crate::common::cqrs::*;
 use anyhow::{bail, Result};
+#[cfg(test)]
+use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
+
+pub type UsersPageResult = PageResult<User>;
+pub type UsersPageRequest = PageRequest;
+pub type UserRegisterCommandResult = CommandResult<String>;
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+pub struct User {
+    pub id: u32,
+    pub username: String,
+    pub email: String,
+}
+
+#[cfg_attr(test, automock)]
+pub trait UserRepository {
+    fn get_all(&self) -> Vec<User>;
+    fn get_by_id(&self, id: u32) -> Option<User>;
+    fn is_user_exist(&self, username: String) -> bool;
+    fn register(&self, username: String, email: String);
+}
 
 #[derive(Debug, Validate, Serialize, Deserialize)]
 pub struct UserRegisterCommand {
@@ -11,30 +31,33 @@ pub struct UserRegisterCommand {
     pub email: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserRegisterCommandResult {
-    pub ok: bool,
-}
-
-impl Command<UserRegisterCommandResult> for UserRegisterCommand {
-    fn handle_inner_impl(&self) -> Result<UserRegisterCommandResult> {
-        let user_repo = &PostgesUserRepository {};
-        let r = self.handle_inner(user_repo)?;
-        Ok(r)
-    }
-}
-
 impl UserRegisterCommand {
-    fn handle_inner(&self, user_repo: &impl UserRepository) -> Result<UserRegisterCommandResult> {
+    pub fn handle_inner(
+        &self,
+        user_repo: &impl UserRepository,
+    ) -> Result<UserRegisterCommandResult> {
         let exist = user_repo.is_user_exist(self.username.clone());
         if exist {
             bail!("User exists");
         }
         user_repo.register(self.username.clone(), self.email.clone());
-        Ok(UserRegisterCommandResult { ok: true })
+        Ok(UserRegisterCommandResult {
+            ok: true,
+            ..UserRegisterCommandResult::default()
+        })
     }
 }
 
+impl UsersPageRequest {
+    pub fn handle_inner(&self, user_repo: &impl UserRepository) -> Result<UsersPageResult> {
+        let users: Vec<User> = user_repo.get_all();
+        let a: UsersPageResult = UsersPageResult {
+            items: users,
+            total_items: 5,
+        };
+        Ok(a)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -78,3 +101,13 @@ mod tests {
     }
 }
 
+/* Ok(UsersQueryResult {
+    items: users
+        .iter()
+        .map(|x| UserItem {
+            id: x.id,
+            username: x.username.clone(),
+            email: x.email.clone(),
+        })
+        .collect(),
+})*/

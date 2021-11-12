@@ -1,13 +1,6 @@
+use domain::users::*;
+use common::cqrs::*;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
-use commands::users::*;
-use infra::cqrs::*;
-use queries::users::*;
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize)] // <-- Note the Serialize for the json echo response
-struct Thing {
-    pub id: String,
-}
 
 #[post("/users")]
 async fn register_user(cmd: web::Json<UserRegisterCommand>) -> impl Responder {
@@ -17,8 +10,11 @@ async fn register_user(cmd: web::Json<UserRegisterCommand>) -> impl Responder {
 
 #[get("/users")]
 async fn get_users() -> impl Responder {
-    let user_query = UsersQueryInput {};
-    let r: UsersQueryResult = user_query.handle().unwrap();
+    let user_query = UsersPageRequest {
+        page: None,
+        sort: None
+    };
+    let r: UsersPageResult = user_query.handle().unwrap();
     HttpResponse::Ok().json(r)
 }
 
@@ -40,6 +36,6 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-pub mod commands;
-pub mod infra;pub mod models;
-pub mod queries;
+pub mod domain;
+pub mod infra;
+pub mod common;

@@ -1,31 +1,33 @@
-use lazy_static::lazy_static;
-#[cfg(test)]
-use mockall::{automock, predicate::*};
-use serde::{Deserialize, Serialize};
+use crate::domain::users::*;
+use crate::common::cqrs::*;
+use anyhow::{bail, Result};
 use std::sync::Mutex;
+use lazy_static::lazy_static;
 
 lazy_static! {
     static ref DB: Mutex<Vec<User>> = Mutex::new(vec![]);
     static ref SQ: Mutex<Vec<u32>> = Mutex::new(vec![]);
 }
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
-pub struct User {
-    pub id: u32,
-    pub username: String,
-    pub email: String,
+
+impl Command<UserRegisterCommandResult> for UserRegisterCommand {
+    fn handle_inner_impl(&self) -> Result<UserRegisterCommandResult> {
+        let user_repo = &InMemoryUserRepository {};
+        let r = self.handle_inner(user_repo)?;
+        Ok(r)
+    }
 }
 
-#[cfg_attr(test, automock)]
-pub trait UserRepository {
-    fn get_all(&self) -> Vec<User>; 
-    fn get_by_id(&self, id: u32) -> Option<User>;
-    fn is_user_exist(&self, username: String) -> bool;
-    fn register(&self, username: String, email: String);
+impl Query<UsersPageResult> for UsersPageRequest {
+    fn handle_inner_impl(&self) -> Result<UsersPageResult> {
+        let user_repo = &InMemoryUserRepository {};
+        let r = self.handle_inner(user_repo)?;
+        Ok(r)
+    }
 }
 
-pub struct PostgesUserRepository {}
+pub struct InMemoryUserRepository {}
 
-impl UserRepository for PostgesUserRepository {
+impl UserRepository for InMemoryUserRepository {
     fn get_by_id(&self, id: u32) -> Option<User> {
         let user = DB.lock().unwrap().iter().find(|x| x.id == id)?.clone();
         Some(user)
@@ -50,3 +52,5 @@ impl UserRepository for PostgesUserRepository {
         list
     }
 }
+
+
