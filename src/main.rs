@@ -10,10 +10,7 @@ async fn register_user(cmd: web::Json<UserRegisterCommand>) -> impl Responder {
 
 #[get("/users")]
 async fn get_users() -> impl Responder {
-    let user_query = UsersPageRequest {
-        page: None,
-        sort: None
-    };
+    let user_query = UsersPageRequest::default();
     let r: UsersPageResult = user_query.handle().unwrap();
     HttpResponse::Ok().json(r)
 }

@@ -17,3 +17,6 @@ anyhow = "1.0.45"
 mockall = "0.10.2"
 lazy_static = "1.4.0"
 actix-web = "3.3.2"
+[dependencies.serde_with]
+version = "1.11.0"
+features = [ "macros" ]

@@ -1,12 +1,12 @@
-use crate::domain::users::*;
 use crate::common::cqrs::*;
-use anyhow::{bail, Result};
-use std::sync::Mutex;
+use crate::domain::users::*;
+use anyhow::{Result};
 use lazy_static::lazy_static;
+use std::sync::Mutex;
 
 lazy_static! {
     static ref DB: Mutex<Vec<User>> = Mutex::new(vec![]);
-    static ref SQ: Mutex<Vec<u32>> = Mutex::new(vec![]);
+    static ref SQ: Mutex<u32> = Mutex::new(1);
 }
 
 impl Command<UserRegisterCommandResult> for UserRegisterCommand {
@@ -34,23 +34,29 @@ impl UserRepository for InMemoryUserRepository {
     }
 
     fn register(&self, username: String, email: String) {
-        let id = 5;
+        let mut id = SQ.lock().unwrap();
         DB.lock().unwrap().push(User {
-            id: id,
+            id: id.clone(),
             username: username,
             email: email,
         });
+        
+        *id = *id + 1;
     }
     fn is_user_exist(&self, username: String) -> bool {
         DB.lock().unwrap().iter().any(|x| x.username == username)
     }
 
-    fn get_all(&self) -> Vec<User> {
+    fn get_all(&self, r: &UsersPageRequest) -> UsersPageResult {
         let mut all = DB.lock().unwrap();
         let mut list: Vec<User> = vec![];
         list.extend(all.drain(..));
-        list
+        let total_items = list.len();
+        let total_pages = (total_items as u32 / r.pagesize) + 1;
+        UsersPageResult {
+            items: list,
+            total_items: total_items as u32,
+            total_pages: total_pages,
+        }
     }
 }
-
-

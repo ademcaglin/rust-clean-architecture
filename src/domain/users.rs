@@ -1,13 +1,14 @@
 use crate::common::cqrs::*;
 use anyhow::{bail, Result};
-#[cfg(test)]
-use mockall::{automock, predicate::*};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 pub type UsersPageResult = PageResult<User>;
 pub type UsersPageRequest = PageRequest;
-pub type UserRegisterCommandResult = CommandResult<String>;
+pub type UserRegisterCommandResult = CommandResult<()>;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct User {
@@ -18,7 +19,7 @@ pub struct User {
 
 #[cfg_attr(test, automock)]
 pub trait UserRepository {
-    fn get_all(&self) -> Vec<User>;
+    fn get_all(&self, r: &UsersPageRequest) -> UsersPageResult;
     fn get_by_id(&self, id: u32) -> Option<User>;
     fn is_user_exist(&self, username: String) -> bool;
     fn register(&self, username: String, email: String);
@@ -41,21 +42,14 @@ impl UserRegisterCommand {
             bail!("User exists");
         }
         user_repo.register(self.username.clone(), self.email.clone());
-        Ok(UserRegisterCommandResult {
-            ok: true,
-            ..UserRegisterCommandResult::default()
-        })
+        Ok(UserRegisterCommandResult::success())
     }
 }
 
 impl UsersPageRequest {
     pub fn handle_inner(&self, user_repo: &impl UserRepository) -> Result<UsersPageResult> {
-        let users: Vec<User> = user_repo.get_all();
-        let a: UsersPageResult = UsersPageResult {
-            items: users,
-            total_items: 5,
-        };
-        Ok(a)
+        let users = user_repo.get_all(&self);
+        Ok(users)
     }
 }
 
