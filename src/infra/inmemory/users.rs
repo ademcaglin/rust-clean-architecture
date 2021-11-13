@@ -1,6 +1,7 @@
 use crate::common::cqrs::*;
 use crate::domain::users::*;
 use anyhow::{Result};
+
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
@@ -48,9 +49,8 @@ impl UserRepository for InMemoryUserRepository {
     }
 
     fn get_all(&self, r: &UsersPageRequest) -> UsersPageResult {
-        let mut all = DB.lock().unwrap();
-        let mut list: Vec<User> = vec![];
-        list.extend(all.drain(..));
+        let all = DB.lock().unwrap();
+        let list: Vec<User> = all.clone();
         let total_items = list.len();
         let total_pages = (total_items as u32 / r.pagesize) + 1;
         UsersPageResult {

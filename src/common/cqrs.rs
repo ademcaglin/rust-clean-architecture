@@ -42,11 +42,20 @@ pub struct CommandResult<T> {
     pub data: Option<T>,
 }
 
-impl CommandResult<()> {
+/*impl CommandResult<()> {
     pub fn success() -> CommandResult<()> {
         CommandResult {
             ok: true,
             ..CommandResult::default()
+        }
+    }
+}*/
+
+impl<T> CommandResult<T> {
+    pub fn success() -> Self {
+        CommandResult {
+            ok: true,
+            data: None
         }
     }
 }
